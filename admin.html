@@ -201,51 +201,62 @@
     }
 
     function carregarAgenda() {
-    const bId = document.getElementById('filtro-barbeiro-agenda').value;
-    const render = document.getElementById('render-agenda');
-    if (unsubscribeAgenda) unsubscribeAgenda();
-    
-    let query = db.collection("agenda").orderBy("data", "asc").orderBy("hora", "asc");
-    if(bId) query = query.where("barbeiroId", "==", bId);
+        const bId = document.getElementById('filtro-barbeiro-agenda').value;
+        const render = document.getElementById('render-agenda');
+        if (unsubscribeAgenda) unsubscribeAgenda();
+        
+        let query = db.collection("agenda").orderBy("data", "asc").orderBy("hora", "asc");
+        if(bId) query = query.where("barbeiroId", "==", bId);
 
-    unsubscribeAgenda = query.onSnapshot(snap => {
-        render.innerHTML = snap.empty ? '<p style="text-align:center; padding:50px; color:gray; font-size:0.8rem;">Sem agendamentos.</p>' : "";
-        snap.forEach(doc => {
-            const ag = doc.data();
-            
-            // Lógica para formatar o preço (se existir no banco)
-            let precoFormatado = "---";
-            if (ag.servico && ag.servico.includes(" - ")) {
-                const partes = ag.servico.split(" - ");
-                const valor = partes[1].replace(/\D/g, "");
-                precoFormatado = `R$ ${valor},00`;
-            }
+        unsubscribeAgenda = query.onSnapshot(snap => {
+            render.innerHTML = snap.empty ? '<p style="text-align:center; padding:50px; color:gray; font-size:0.8rem;">Sem agendamentos.</p>' : "";
+            snap.forEach(doc => {
+                const ag = doc.data();
+                
+                // Busca o nome do barbeiro no cache para destacar
+                const nomeBarbeiro = barbeirosCache.find(x => x.id === ag.barbeiroId)?.nome || "Profissional";
+                
+                // Lógica de extração do preço: 
+                // Tenta pegar do campo ag.servico (ex: "CORTE - 40 - 30") 
+                // ou usa o valor padrão caso não encontre.
+                let precoFormatado = "Consulte";
+                if (ag.servico) {
+                    const partes = ag.servico.split(" - ");
+                    if (partes.length >= 2) {
+                        const valor = partes[1].replace(/\D/g, "");
+                        precoFormatado = `R$ ${valor},00`;
+                    }
+                }
 
-            render.innerHTML += `
-            <div class="card">
-                <div class="agenda-header">
-                    <span class="agenda-date">${ag.data.split('-').reverse().join('/')}</span>
-                    <div class="agenda-time">${ag.hora}</div>
-                </div>
-                <div class="agenda-client">${(ag.cliente || "Cliente").toUpperCase()}</div>
-                <div class="agenda-details">
-                    <div class="detail-item">
-                        <span class="detail-label">Serviço</span>
-                        <span class="detail-value">${ag.servico || "Corte"}</span>
+                render.innerHTML += `
+                <div class="card">
+                    <div class="agenda-header">
+                        <span class="agenda-date" style="color:var(--primary); font-weight:800; font-size:0.8rem;">🗓️ ${ag.data.split('-').reverse().join('/')}</span>
+                        <div class="agenda-time">${ag.hora}</div>
                     </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Valor Est.</span>
-                        <span class="detail-value" style="color:var(--success)">${precoFormatado}</span>
+                    <div class="agenda-client">${(ag.cliente || "Cliente").toUpperCase()}</div>
+                    <div class="agenda-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Serviço</span>
+                            <span class="detail-value">${ag.servico || "Corte"}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Valor do Corte</span>
+                            <span class="detail-value" style="color:var(--success); font-size:0.9rem;">${precoFormatado}</span>
+                        </div>
+                        <div class="detail-item" style="grid-column: span 2; margin-top: 10px; border-top: 1px solid #222; padding-top: 10px;">
+                            <span class="detail-label">Barbeiro Selecionado</span>
+                            <span class="detail-value" style="color:var(--primary)">✂️ ${nomeBarbeiro.toUpperCase()}</span>
+                        </div>
                     </div>
-                </div>
-                <div class="agenda-footer">
-                    <button class="btn-wpp" onclick="window.open('https://wa.me/55${ag.whatsapp ? ag.whatsapp.replace(/\D/g,'') : ''}')">📲 WHATSAPP</button>
-                    <button class="btn-done" onclick="excluir('agenda', '${doc.id}')">CONCLUIR</button>
-                </div>
-            </div>`;
+                    <div class="agenda-footer">
+                        <button class="btn-wpp" onclick="window.open('https://wa.me/55${ag.whatsapp ? ag.whatsapp.replace(/\D/g,'') : ''}')">📲 WHATSAPP</button>
+                        <button class="btn-done" onclick="excluir('agenda', '${doc.id}')">CONCLUIR</button>
+                    </div>
+                </div>`;
+            });
         });
-    });
-}
+    }
 
     async function carregarEquipe() {
         const snap = await db.collection("barbeiros").get();
