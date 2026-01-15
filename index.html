@@ -139,7 +139,6 @@
     let barbeirosData = [];
     let horarioSelecionado = null;
 
-    // Máscaras de Celular
     const mascarar = (el) => {
         el.addEventListener('input', (e) => {
             let v = e.target.value.replace(/\D/g, '');
@@ -165,40 +164,26 @@
     }
 
     function atualizarServicos() {
-    const bId = document.getElementById("select-barbeiro").value;
-    const b = barbeirosData.find(x => x.id === bId);
-    const sS = document.getElementById("select-servico");
-    
-    sS.innerHTML = '<option value="">Selecione o Serviço</option>';
-    
-    if (b && b.servicos) {
-        // Divide o texto do banco por linhas
-        const linhas = b.servicos.split('\n');
-        
-        linhas.forEach(linha => {
-            if (linha.trim()) {
-                const partes = linha.split(' - ');
-                
-                // Se a linha estiver no padrão CORTE - 40 - 30
-                if (partes.length === 3) {
-                    const nome = partes[0].trim();
-                    const preco = partes[1].trim();
-                    const tempo = partes[2].trim();
-                    
-                    // Monta o texto bonito para o cliente ver: CORTE - R$ 40,00 - 30 MIN
-                    const textoFormatado = `${nome} - R$ ${preco},00 - ${tempo} MIN`;
-                    
-                    // O "value" continua sendo o original para o sistema não se perder
-                    sS.innerHTML += `<option value="${linha.trim()}">${textoFormatado}</option>`;
-                } else {
-                    // Caso a linha não tenha o padrão, exibe como está
-                    sS.innerHTML += `<option value="${linha.trim()}">${linha.trim()}</option>`;
+        const bId = document.getElementById("select-barbeiro").value;
+        const b = barbeirosData.find(x => x.id === bId);
+        const sS = document.getElementById("select-servico");
+        sS.innerHTML = '<option value="">Selecione o Serviço</option>';
+        if (b && b.servicos) {
+            const linhas = b.servicos.split('\n');
+            linhas.forEach(linha => {
+                if (linha.trim()) {
+                    const partes = linha.split(' - ');
+                    if (partes.length === 3) {
+                        const textoFormatado = `${partes[0].trim().toUpperCase()} - R$ ${partes[1].trim()},00 - ${partes[2].trim()} MIN`;
+                        sS.innerHTML += `<option value="${linha.trim()}">${textoFormatado}</option>`;
+                    } else {
+                        sS.innerHTML += `<option value="${linha.trim()}">${linha.trim().toUpperCase()}</option>`;
+                    }
                 }
-            }
-        });
+            });
+        }
+        renderizarDatasPremium();
     }
-    renderizarDatasPremium();
-}
 
     function resetarHorarios() {
         horarioSelecionado = null;
@@ -241,14 +226,17 @@
         if(!servTexto) { grid.innerHTML = "<p style='grid-column:1/-1; font-size:0.7rem; color:orange;'>Escolha o serviço primeiro.</p>"; return; }
         
         grid.innerHTML = "Verificando...";
-        const agSnap = await db.collection("agenda").where("data", "==", data).where("barbeiroId", "==", bId).get();
-        const blSnap = await db.collection("bloqueios").where("data", "==", data).where("barbeiroId", "==", bId).get();
+        
+        const [agSnap, blSnap] = await Promise.all([
+            db.collection("agenda").where("data", "==", data).where("barbeiroId", "==", bId).get(),
+            db.collection("bloqueios").where("data", "==", data).where("barbeiroId", "==", bId).get()
+        ]);
         
         let ocupados = [...blSnap.docs.map(d => d.data().hora)];
         agSnap.docs.forEach(doc => {
             const ag = doc.data();
             ocupados.push(ag.hora);
-            if(ag.duracao > 30) ocupados.push(calcularProximo(ag.hora));
+            if(parseInt(ag.duracao) > 30) ocupados.push(calcularProximo(ag.hora));
         });
 
         const duracaoAtual = parseInt(servTexto.split(' - ')[2]) || 30;
@@ -257,14 +245,24 @@
         
         horas.forEach((h, idx) => {
             let isOcupado = ocupados.includes(h);
+
+            // Bloqueia se o serviço de 60min não couber (se o próximo horário estiver ocupado)
             if(!isOcupado && duracaoAtual > 30) {
                 const prox = horas[idx+1];
                 if(!prox || ocupados.includes(prox)) isOcupado = true;
             }
+
             const btn = document.createElement("div");
             btn.className = "hora-btn " + (isOcupado ? "ocupada" : "");
             btn.textContent = h;
-            btn.onclick = () => { if(!isOcupado) { document.querySelectorAll(".hora-btn").forEach(e => e.classList.remove("selecionada")); btn.classList.add("selecionada"); horarioSelecionado = h; } };
+            
+            if(!isOcupado) {
+                btn.onclick = () => {
+                    document.querySelectorAll(".hora-btn").forEach(e => e.classList.remove("selecionada"));
+                    btn.classList.add("selecionada");
+                    horarioSelecionado = h;
+                };
+            }
             grid.appendChild(btn);
         });
     }
@@ -276,56 +274,64 @@
     }
 
     async function confirmarAgendamento() {
-        const nome = document.getElementById("nome-cliente").value;
-        const zap = document.getElementById("whatsapp-cliente").value;
-        const bId = document.getElementById("select-barbeiro").value;
-        const data = document.getElementById("data-agenda").value;
-        const servTexto = document.getElementById("select-servico").value;
-        if(!nome || !horarioSelecionado || !data || !servTexto) return alert("Preencha tudo!");
-        
-        const partes = servTexto.split(' - ');
-        const duracao = parseInt(partes[2]) || 30;
-
-        await db.collection("agenda").add({ 
-            cliente: nome, whatsapp: zap, barbeiroId: bId, 
-            data, hora: horarioSelecionado, servico: partes[0], 
-            duracao, criadoEm: new Date() 
-        });
-        document.getElementById('modal-sucesso').style.display = 'flex';
-    }
-
-    async function processarCancelamento() {
-    const zap = document.getElementById("cancel-zap").value;
-    const data = document.getElementById("cancel-data").value;
-
-    if(zap.length < 10 || !data) {
-        return alert("Por favor, informe o WhatsApp e a Data do agendamento.");
+    const nome = document.getElementById("nome-cliente").value;
+    const zap = document.getElementById("whatsapp-cliente").value;
+    const bId = document.getElementById("select-barbeiro").value;
+    const data = document.getElementById("data-agenda").value;
+    const servTexto = document.getElementById("select-servico").value;
+    
+    // Validação básica
+    if(!nome || !horarioSelecionado || !data || !servTexto) {
+        return alert("⚠️ Por favor, preencha seu nome e escolha um horário antes de finalizar.");
     }
     
-    // Busca agendamentos que batem com o ZAP E com a DATA informada
-    const snap = await db.collection("agenda")
-        .where("whatsapp", "==", zap)
-        .where("data", "==", data)
-        .get();
+    // Pegando a duração (ex: 30 ou 60)
+    const partes = servTexto.split(' - ');
+    const duracao = parseInt(partes[2]) || 30;
 
-    if(snap.empty) {
-        return alert("Não encontramos nenhum agendamento com esses dados. Verifique o número e a data.");
-    }
+    const btn = document.getElementById("btn-confirmar");
+    btn.innerText = "PROCESSANDO...";
+    btn.disabled = true;
 
-    // Se encontrou, pede a confirmação final
-    if(confirm("Agendamento localizado! Deseja realmente cancelar sua reserva para o dia " + data.split('-').reverse().join('/') + "?")) {
-        const batch = db.batch();
-        snap.forEach(doc => batch.delete(doc.ref));
-        
-        try {
-            await batch.commit();
-            alert("Agendamento cancelado com sucesso. O horário já está disponível para outros clientes.");
-            location.reload();
-        } catch (e) {
-            alert("Erro ao cancelar. Tente novamente.");
-        }
+    try {
+        // Tenta gravar no Firebase
+        await db.collection("agenda").add({ 
+            cliente: nome.toUpperCase(), 
+            whatsapp: zap, 
+            barbeiroId: bId, 
+            data: data, 
+            hora: horarioSelecionado, 
+            servico: partes[0].toUpperCase(), 
+            duracao: duracao, 
+            criadoEm: new Date() 
+        });
+
+        console.log("Sucesso ao gravar!");
+        document.getElementById('modal-sucesso').style.display = 'flex';
+    } catch (error) {
+        console.error("Erro detalhado:", error);
+        alert("❌ Erro ao salvar agendamento: " + error.message);
+        btn.innerText = "FINALIZAR AGENDAMENTO";
+        btn.disabled = false;
     }
 }
+
+    async function processarCancelamento() {
+        const zap = document.getElementById("cancel-zap").value;
+        const data = document.getElementById("cancel-data").value;
+        if(zap.length < 10 || !data) return alert("Informe WhatsApp e Data.");
+        
+        const snap = await db.collection("agenda").where("whatsapp", "==", zap).where("data", "==", data).get();
+        if(snap.empty) return alert("Agendamento não encontrado.");
+
+        if(confirm("Deseja realmente cancelar?")) {
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("Cancelado com sucesso.");
+            location.reload();
+        }
+    }
 </script>
 </body>
 </html>
