@@ -165,15 +165,40 @@
     }
 
     function atualizarServicos() {
-        const bId = document.getElementById("select-barbeiro").value;
-        const b = barbeirosData.find(x => x.id === bId);
-        const sS = document.getElementById("select-servico");
-        sS.innerHTML = '<option value="">Selecione o Serviço</option>';
-        if(b && b.servicos) b.servicos.split('\n').forEach(s => { 
-            if(s.trim()) sS.innerHTML += `<option value="${s.trim()}">${s.trim()}</option>`; 
+    const bId = document.getElementById("select-barbeiro").value;
+    const b = barbeirosData.find(x => x.id === bId);
+    const sS = document.getElementById("select-servico");
+    
+    sS.innerHTML = '<option value="">Selecione o Serviço</option>';
+    
+    if (b && b.servicos) {
+        // Divide o texto do banco por linhas
+        const linhas = b.servicos.split('\n');
+        
+        linhas.forEach(linha => {
+            if (linha.trim()) {
+                const partes = linha.split(' - ');
+                
+                // Se a linha estiver no padrão CORTE - 40 - 30
+                if (partes.length === 3) {
+                    const nome = partes[0].trim();
+                    const preco = partes[1].trim();
+                    const tempo = partes[2].trim();
+                    
+                    // Monta o texto bonito para o cliente ver: CORTE - R$ 40,00 - 30 MIN
+                    const textoFormatado = `${nome} - R$ ${preco},00 - ${tempo} MIN`;
+                    
+                    // O "value" continua sendo o original para o sistema não se perder
+                    sS.innerHTML += `<option value="${linha.trim()}">${textoFormatado}</option>`;
+                } else {
+                    // Caso a linha não tenha o padrão, exibe como está
+                    sS.innerHTML += `<option value="${linha.trim()}">${linha.trim()}</option>`;
+                }
+            }
         });
-        renderizarDatasPremium();
     }
+    renderizarDatasPremium();
+}
 
     function resetarHorarios() {
         horarioSelecionado = null;
