@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>✂️ El Negrones | Agendamento</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #c5a059; --bg: #0a0a0a; --card: #141414; 
+            --input-bg: #1d1d1d; --text: #ffffff; --text-dim: #999; 
+            --grad: linear-gradient(135deg, #c5a059 0%, #a68549 100%); 
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; justify-content: center; overflow-x: hidden; }
+        .container { width: 100%; max-width: 480px; padding-bottom: 50px; animation: fadeIn 0.8s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .header { text-align: center; padding: 20px 0; }
+        .logo-img { width: 180px; height: auto; margin-bottom: 10px; }
+        .header p { font-size: 0.7rem; letter-spacing: 5px; color: var(--text-dim); text-transform: uppercase; margin-top: 5px; }
+
+        .card { background: var(--card); padding: 25px; border-radius: 35px; border: 1px solid #222; }
+        label { font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin: 15px 0 8px 10px; display: block; }
+        input, select { width: 100%; padding: 18px; margin-bottom: 20px; border-radius: 20px; border: 1px solid #282828; background: var(--input-bg); color: #fff; font-size: 1rem; }
+
+        /* CARDS DE DATA */
+        .datas-wrapper { display: flex; gap: 12px; overflow-x: auto; padding: 15px 5px; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory; }
+        .datas-wrapper::-webkit-scrollbar { display: none; }
+        .card-data { min-width: 75px; background: #1a1a1a; padding: 18px 10px; border-radius: 22px; border: 1px solid #252525; text-align: center; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; scroll-snap-align: start; }
+        .card-data span:first-child { font-size: 0.65rem; text-transform: uppercase; color: var(--text-dim); font-weight: 800; }
+        .card-data span:last-child { font-size: 1.2rem; font-weight: 900; color: #fff; }
+        .card-data.selecionada { background: var(--grad); border: none; transform: scale(1.05); box-shadow: 0 10px 20px rgba(197, 160, 89, 0.2); }
+        .card-data.selecionada span { color: #000 !important; }
+
+        /* HORARIOS */
+        .horarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px; }
+        .hora-btn { background: #1a1a1a; padding: 15px 5px; text-align: center; border-radius: 18px; border: 1px solid #252525; cursor: pointer; color: var(--text-dim); font-weight: 600; transition: 0.2s; }
+        .hora-btn.selecionada { background: var(--grad); color: #000; font-weight: 800; border: none; transform: scale(1.05); }
+        .hora-btn.ocupada { background: #111; opacity: 0.2; color: #444; cursor: not-allowed; }
+
+        /* BOTÃO COM EFEITO SHIMMER (BRILHO) */
+        .btn-principal { 
+            position: relative;
+            width: 100%; padding: 22px; border-radius: 22px; 
+            background: var(--grad); color: #000; font-weight: 900; 
+            border: none; cursor: pointer; text-transform: uppercase; 
+            font-size: 1rem; overflow: hidden;
+            box-shadow: 0 10px 20px rgba(197, 160, 89, 0.2); 
+        }
+        .btn-principal::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 20%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: rotate(30deg);
+            transition: none;
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -60%; }
+            30% { left: 140%; }
+            100% { left: 140%; }
+        }
+        
+        #modal-sucesso { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
+        .success-card { background: var(--card); padding: 40px 30px; border-radius: 40px; border: 1px solid var(--primary); text-align: center; max-width: 350px; }
+    </style>
+</head>
+<body>
+
+<div id="modal-sucesso">
+    <div class="success-card">
+        <h2 style="color:var(--primary); font-family:'Cinzel', serif; font-size: 1.8rem;">RESERVA FEITA!</h2>
+        <p style="color:var(--text-dim); margin-bottom: 25px;">Seu estilo está garantido.</p>
+        <button class="btn-principal" onclick="location.reload()">Sair</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <img src="logo_insta.png" alt="Logo" class="logo-img">
+        <p>Criando seu estilo</p>
+    </div>
+
+    <div class="card">
+        <label>Quem vai cuidar do seu estilo?</label>
+        <select id="select-barbeiro" onchange="atualizarServicos()">
+            <option value="">Carregando profissionais...</option>
+        </select>
+        
+        <label>O que vamos fazer hoje?</label>
+        <select id="select-servico">
+            <option value="">Escolha o profissional primeiro</option>
+        </select>
+        
+        <label>Escolha o dia (Arraste 👉)</label>
+        <div class="datas-wrapper" id="render-datas">
+            <p style="font-size: 0.75rem; color: #555; padding: 10px;">Aguardando profissional...</p>
+        </div>
+        <input type="hidden" id="data-agenda">
+        
+        <label>Horários Disponíveis</label>
+        <div class="horarios-grid" id="grid-horarios"></div>
+        
+        <label>Seu Nome</label>
+        <input type="text" id="nome-cliente" placeholder="Como podemos te chamar?">
+        
+        <label>WhatsApp</label>
+        <input type="tel" id="whatsapp-cliente" placeholder="(00) 00000-0000" maxlength="15">
+        
+        <button class="btn-principal" id="btn-confirmar" onclick="confirmarAgendamento()">Finalizar Agendamento</button>
+    </div>
+</div>
+
+<script>
+    // Configurações do Firebase
+    const firebaseConfig = { 
+        apiKey: "AIzaSyC0x8q1N7R70BYhfd2daedBjRKH0qupJiI", 
+        authDomain: "elnes-720ce.firebaseapp.com", 
+        projectId: "elnes-720ce", 
+        storageBucket: "elnes-720ce.firebasestorage.app", 
+        messagingSenderId: "839018097076", 
+        appId: "1:839018097076:web:cc902e9081e3a35cac2ae1" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    let barbeirosData = [];
+    let horarioSelecionado = null;
+
+    // Lógica da Máscara de Celular
+    const inputTel = document.getElementById('whatsapp-cliente');
+    inputTel.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 11) v = v.slice(0, 11);
+        
+        if (v.length > 10) {
+            v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+        } else if (v.length > 5) {
+            v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+        } else if (v.length > 2) {
+            v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+        } else if (v.length > 0) {
+            v = v.replace(/^(\d*)/, '($1');
+        }
+        e.target.value = v;
+    });
+
+    window.onload = () => carregarBarbeiros();
+
+    async function carregarBarbeiros() {
+        const snap = await db.collection("barbeiros").get();
+        barbeirosData = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        const sB = document.getElementById("select-barbeiro");
+        sB.innerHTML = '<option value="">Selecione o Barbeiro</option>';
+        barbeirosData.forEach(b => sB.innerHTML += `<option value="${b.id}">${b.nome}</option>`);
+    }
+
+    function atualizarServicos() {
+        const bId = document.getElementById("select-barbeiro").value;
+        const b = barbeirosData.find(x => x.id === bId);
+        const sS = document.getElementById("select-servico");
+        sS.innerHTML = '<option value="">Selecione o Serviço</option>';
+        if(b && b.servicos) b.servicos.split('\n').forEach(s => { if(s.trim()) sS.innerHTML += `<option>${s.trim()}</option>`; });
+        renderizarDatasPremium();
+    } 
+
+    async function renderizarDatasPremium() {
+        const render = document.getElementById('render-datas');
+        render.innerHTML = "Carregando...";
+        const confCal = await db.collection("configuracao").doc("calendario").get({source: 'server'});
+        const confDias = await db.collection("configuracao").doc("funcionamento").get({source: 'server'});
+        let semanas = confCal.exists ? parseInt(confCal.data().semanasLimite || 1) : 1;
+        let diasAtivos = confDias.exists ? confDias.data().diasAtivos : [1,2,3,4,5,6];
+        render.innerHTML = ""; 
+        const nomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        for (let i = 0; i < (semanas * 7); i++) {
+            let d = new Date(hoje); d.setDate(hoje.getDate() + i);
+            if (diasAtivos.includes(d.getDay())) {
+                const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const card = document.createElement('div');
+                card.className = 'card-data';
+                card.innerHTML = `<span>${nomes[d.getDay()]}</span><span>${d.getDate()}</span>`;
+                card.onclick = () => {
+                    document.querySelectorAll('.card-data').forEach(c => c.classList.remove('selecionada'));
+                    card.classList.add('selecionada');
+                    document.getElementById('data-agenda').value = iso;
+                    carregarHorarios(iso);
+                };
+                render.appendChild(card);
+            }
+        }
+    }
+
+    async function carregarHorarios(data) {
+    const grid = document.getElementById("grid-horarios");
+    const bId = document.getElementById("select-barbeiro").value;
+    const servicoTexto = document.getElementById("select-servico").value;
+
+    if (!servicoTexto) {
+        grid.innerHTML = '<p style="font-size:0.7rem; color:var(--primary); grid-column: 1/-1; text-align:center;">Selecione o serviço primeiro</p>';
+        return;
+    }
+
+    grid.innerHTML = "Verificando...";
+    
+    const agSnap = await db.collection("agenda").where("data", "==", data).where("barbeiroId", "==", bId).get();
+    const blSnap = await db.collection("bloqueios").where("data", "==", data).where("barbeiroId", "==", bId).get();
+    
+    // Mapeia horários ocupados
+    let ocupados = [...agSnap.docs.map(d => d.data().hora), ...blSnap.docs.map(d => d.data().hora)];
+    
+    // Adiciona os horários de "extensão" (serviços longos que ocupam o próximo slot)
+    agSnap.docs.forEach(doc => {
+        const ag = doc.data();
+        if (ag.duracao && ag.duracao > 30) {
+            const proxHora = calcularProximoHorario(ag.hora);
+            if (proxHora) ocupados.push(proxHora);
+        }
+    });
+
+    grid.innerHTML = "";
+    const horas = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"];
+    
+    // Pega a duração do serviço atual selecionado
+    const duracaoAtual = parseInt(servicoTexto.split(' - ')[2]) || 30;
+
+    horas.forEach((h, index) => {
+        let isOcupado = ocupados.includes(h);
+        
+        // Regra extra: Se o serviço atual for longo (ex: 60min), 
+        // o botão fica ocupado se o PRÓXIMO slot estiver ocupado.
+        if (!isOcupado && duracaoAtual > 30) {
+            const prox = horas[index + 1];
+            if (!prox || ocupados.includes(prox)) {
+                isOcupado = true; // Bloqueia pois não cabe o serviço completo
+            }
+        }
+
+        const btn = document.createElement("div");
+        btn.className = "hora-btn " + (isOcupado ? "ocupada" : "");
+        btn.textContent = h;
+        btn.onclick = () => { 
+            if(!isOcupado) { 
+                document.querySelectorAll(".hora-btn").forEach(e => e.classList.remove("selecionada")); 
+                btn.classList.add("selecionada"); 
+                horarioSelecionado = h; 
+            } 
+        };
+        grid.appendChild(btn);
+    });
+}
+
+// Função auxiliar para achar o próximo slot de 30min
+function calcularProximoHorario(hora) {
+    const [h, m] = hora.split(':').map(Number);
+    let totalMin = h * 60 + m + 30;
+    const nh = Math.floor(totalMin / 60);
+    const nm = totalMin % 60;
+    return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+}
+
+    async function confirmarAgendamento() {
+    const nome = document.getElementById("nome-cliente").value;
+    const zap = document.getElementById("whatsapp-cliente").value;
+    const bId = document.getElementById("select-barbeiro").value;
+    const data = document.getElementById("data-agenda").value;
+    const servicoTexto = document.getElementById("select-servico").value;
+    
+    if(!nome || !horarioSelecionado || !data || !servicoTexto) return alert("Preencha todos os campos!");
+
+    // Extrai nome do serviço e duração (Ex: "Corte - 40 - 60" -> "Corte", 60)
+    const partes = servicoTexto.split(' - ');
+    const nomeServico = partes[0];
+    const duracao = parseInt(partes[2]) || 30;
+
+    try {
+        await db.collection("agenda").add({ 
+            cliente: nome, 
+            whatsapp: zap, 
+            barbeiroId: bId, 
+            data: data, 
+            hora: horarioSelecionado, 
+            servico: nomeServico,
+            duracao: duracao,
+            criadoEm: new Date() 
+        });
+        document.getElementById('modal-sucesso').style.display = 'flex';
+    } catch (e) {
+        alert("Erro ao agendar, tente novamente.");
+    }
+}
+</script>
+</body>
+</html>
