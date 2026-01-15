@@ -16,18 +16,15 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; }
 
-        /* Login - Mantido por estrutura, mas ignorado pelo script */
         #modal-login { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; display: none; }
         .login-box { width: 85%; max-width: 350px; text-align: center; padding: 40px 25px; background: var(--card); border-radius: 35px; border: 1px solid #222; }
 
-        /* Nav */
         .top-nav-container { padding: 25px 15px; text-align: center; background: linear-gradient(to bottom, #111, transparent); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .tab-bar { background: rgba(22, 22, 22, 0.7); padding: 6px; border-radius: 20px; display: flex; max-width: 550px; margin: 0 auto; border: 1px solid #222; }
         .tab-btn { padding: 12px 2px; border-radius: 14px; color: var(--text-dim); font-size: 0.65rem; font-weight: 600; cursor: pointer; flex: 1; text-align: center; transition: 0.4s; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 1px solid transparent; }
         .tab-btn span:first-child { font-size: 1.1rem; }
         .tab-btn.active { background: rgba(255, 255, 255, 0.05); color: var(--primary); border: 1px solid rgba(197, 160, 89, 0.2); }
 
-        /* Content */
         .content { padding: 20px 15px; max-width: 480px; margin: auto; }
         .card { background: var(--card); border-radius: 30px; padding: 22px; margin-bottom: 18px; border: 1px solid #222; position: relative; overflow: hidden; }
         
@@ -38,7 +35,6 @@
         .btn-action { width: 100%; padding: 18px; border-radius: 18px; background: var(--grad); color: #000; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
         .btn-outline { width: 100%; padding: 15px; background: transparent; border: 1px solid #333; color: var(--text-dim); border-radius: 15px; font-weight: 700; font-size: 0.7rem; cursor: pointer; text-transform: uppercase; }
 
-        /* Design Agenda Profissional */
         .agenda-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .agenda-time { background: var(--grad); color: #000; padding: 4px 12px; border-radius: 10px; font-weight: 900; font-size: 0.85rem; }
         .agenda-date { font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
@@ -51,7 +47,6 @@
         .btn-wpp { color: var(--success); font-weight: 800; font-size: 0.7rem; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .btn-done { color: var(--danger); font-weight: 800; font-size: 0.7rem; background: none; border: none; cursor: pointer; }
 
-        /* Folgas e Chips */
         .grid-folgas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 20px; }
         .check-hora { display: none; }
         .label-hora { background: #1a1a1a; padding: 10px 2px; border-radius: 10px; font-size: 0.65rem; text-align: center; border: 1px solid #252525; cursor: pointer; font-weight: 700; color: var(--text-dim); }
@@ -86,18 +81,28 @@
         </div>
 
         <div id="tab-equipe" class="tab-content" style="display:none;">
-            <div class="card">
-                <h3 id="titulo-editor">Gerenciar Time</h3>
-                <input type="hidden" id="edit-id">
-                <label>Nome do Profissional</label>
-                <input id="b-nome" placeholder="Ex: Lucas">
-                <label>Serviços (Nome - Preço - Tempo em Minutos)</label>
-                <textarea id="b-servs" rows="4" placeholder="Corte - 40 - 30&#10;Barba - 30 - 30&#10;Corte e Barba - 70 - 60"></textarea>
-                <button class="btn-action" id="btn-salvar-b" onclick="salvarBarbeiro()">Adicionar Barbeiro</button>
-                <button id="btn-cancelar" class="btn-outline" style="display:none; margin-top:10px;" onclick="limparForm()">CANCELAR EDIÇÃO</button>
-            </div>
-            <div id="render-equipe"></div>
+    <div class="card">
+        <h3 id="titulo-editor">Gerenciar Time</h3>
+        <input type="hidden" id="edit-id">
+        
+        <label>Nome do Profissional</label>
+        <input id="b-nome" placeholder="Ex: Lucas">
+        
+        <div style="background: rgba(197, 160, 89, 0.1); border: 1px dashed var(--primary); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+            <label style="margin-left:0; color:var(--primary);">⚠️ PADRÃO DE CADASTRO:</label>
+            <p style="font-size: 0.65rem; color: #fff; margin: 5px 0;">Digite: <b>Nome - Valor - Minutos</b></p>
+            <p style="font-size: 0.6rem; color: var(--text-dim);">Ex: Corte - 40 - 30</p>
+            <p style="font-size: 0.55rem; color: var(--primary); margin-top:5px;">* No site do cliente e na sua agenda, o valor aparecerá como <b>R$ 40,00</b> automaticamente.</p>
         </div>
+
+        <label>Lista de Serviços (um por linha)</label>
+        <textarea id="b-servs" rows="5" placeholder="Corte - 40 - 30&#10;Barba - 30 - 30"></textarea>
+        
+        <button class="btn-action" id="btn-salvar-b" onclick="salvarBarbeiro()">Salvar Profissional</button>
+        <button id="btn-cancelar" class="btn-outline" style="display:none; margin-top:10px;" onclick="limparForm()">CANCELAR EDIÇÃO</button>
+    </div>
+    <div id="render-equipe"></div>
+</div>
 
         <div id="tab-folgas" class="tab-content" style="display:none;">
             <div class="card">
@@ -176,14 +181,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const horasBase = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"];
+    const horasBase = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"];
     let barbeirosCache = [];
     let unsubscribeAgenda = null;
 
-    // Inicialização direta sem senha
-    window.onload = () => {
-        init();
-    };
+    window.onload = () => { init(); };
 
     async function init() {
         await carregarEquipe();
@@ -198,47 +200,53 @@
         document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
     }
 
-    // Agenda
     function carregarAgenda() {
-        const bId = document.getElementById('filtro-barbeiro-agenda').value;
-        const render = document.getElementById('render-agenda');
-        if (unsubscribeAgenda) unsubscribeAgenda();
-        
-        let query = db.collection("agenda").orderBy("data", "asc").orderBy("hora", "asc");
-        if(bId) query = query.where("barbeiroId", "==", bId);
+    const bId = document.getElementById('filtro-barbeiro-agenda').value;
+    const render = document.getElementById('render-agenda');
+    if (unsubscribeAgenda) unsubscribeAgenda();
+    
+    let query = db.collection("agenda").orderBy("data", "asc").orderBy("hora", "asc");
+    if(bId) query = query.where("barbeiroId", "==", bId);
 
-        unsubscribeAgenda = query.onSnapshot(snap => {
-            render.innerHTML = snap.empty ? '<p style="text-align:center; padding:50px; color:gray; font-size:0.8rem;">Sem agendamentos.</p>' : "";
-            snap.forEach(doc => {
-                const ag = doc.data();
-                const nomeB = barbeirosCache.find(b => b.id === ag.barbeiroId)?.nome || "Profissional";
-                render.innerHTML += `
-                <div class="card">
-                    <div class="agenda-header">
-                        <span class="agenda-date">${ag.data.split('-').reverse().join('/')}</span>
-                        <div class="agenda-time">${ag.hora}</div>
+    unsubscribeAgenda = query.onSnapshot(snap => {
+        render.innerHTML = snap.empty ? '<p style="text-align:center; padding:50px; color:gray; font-size:0.8rem;">Sem agendamentos.</p>' : "";
+        snap.forEach(doc => {
+            const ag = doc.data();
+            
+            // Lógica para formatar o preço (se existir no banco)
+            let precoFormatado = "---";
+            if (ag.servico && ag.servico.includes(" - ")) {
+                const partes = ag.servico.split(" - ");
+                const valor = partes[1].replace(/\D/g, "");
+                precoFormatado = `R$ ${valor},00`;
+            }
+
+            render.innerHTML += `
+            <div class="card">
+                <div class="agenda-header">
+                    <span class="agenda-date">${ag.data.split('-').reverse().join('/')}</span>
+                    <div class="agenda-time">${ag.hora}</div>
+                </div>
+                <div class="agenda-client">${(ag.cliente || "Cliente").toUpperCase()}</div>
+                <div class="agenda-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Serviço</span>
+                        <span class="detail-value">${ag.servico || "Corte"}</span>
                     </div>
-                    <div class="agenda-client">${(ag.cliente || "Cliente").toUpperCase()}</div>
-                    <div class="agenda-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Serviço</span>
-                            <span class="detail-value">${ag.servico || "Corte"}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Duração</span>
-                            <span class="detail-value">${ag.duracao ? ag.duracao + ' min' : '30 min'}</span>
-                        </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Valor Est.</span>
+                        <span class="detail-value" style="color:var(--success)">${precoFormatado}</span>
                     </div>
-                    <div class="agenda-footer">
-                        <button class="btn-wpp" onclick="window.open('https://wa.me/55${ag.whatsapp ? ag.whatsapp.replace(/\D/g,'') : ''}')">📲 WHATSAPP</button>
-                        <button class="btn-done" onclick="excluir('agenda', '${doc.id}')">CONCLUIR</button>
-                    </div>
-                </div>`;
-            });
+                </div>
+                <div class="agenda-footer">
+                    <button class="btn-wpp" onclick="window.open('https://wa.me/55${ag.whatsapp ? ag.whatsapp.replace(/\D/g,'') : ''}')">📲 WHATSAPP</button>
+                    <button class="btn-done" onclick="excluir('agenda', '${doc.id}')">CONCLUIR</button>
+                </div>
+            </div>`;
         });
-    }
+    });
+}
 
-    // Equipe
     async function carregarEquipe() {
         const snap = await db.collection("barbeiros").get();
         barbeirosCache = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -286,7 +294,6 @@
         document.getElementById('btn-cancelar').style.display = "none";
     }
 
-    // Folgas
     function gerarCheckboxesFolga() {
         document.getElementById('grid-selecao-folgas').innerHTML = horasBase.map(h => `<input type="checkbox" id="check-${h}" class="check-hora" value="${h}"><label for="check-${h}" class="label-hora">${h}</label>`).join('');
     }
@@ -321,7 +328,6 @@
         });
     }
 
-    // Configs
     async function salvarLimiteSemanas() {
         const semanas = document.getElementById('conf-semanas').value;
         await db.collection("configuracao").doc("calendario").set({ semanasLimite: parseInt(semanas) }, {merge: true});
@@ -365,7 +371,7 @@
     }
 
     async function verificarAssinatura() {
-        const doc = await db.collection("configuracao").doc("assinatura").get();
+        const doc = await db.collection("configuracao").doc("assinatura").get(); 
         if(doc.exists) {
             const resta = Math.ceil((doc.data().premiumAte.toDate() - new Date()) / (1000*60*60*24));
             document.getElementById('txt-restam').innerHTML = resta > 0 ? `Vence em ${resta} dias` : `Expirado`;
@@ -414,7 +420,7 @@
     }
 
     async function excluir(col, id) {
-        if(confirm("Deseja excluir?")) {
+        if(confirm("Deseja concluir/excluir?")) {
             await db.collection(col).doc(id).delete();
             if(col === 'barbeiros') carregarEquipe();
         }
